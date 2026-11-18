@@ -1,0 +1,401 @@
+
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HNU GPA Calculator - Fall 1</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Inter & Cairo) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', 'Cairo', sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+        }
+        /* Custom number input hide arrows */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        @media print {
+            .no-print { display: none !important; }
+            body { background-color: #ffffff !important; }
+            .print-border { border: 1px solid #cbd5e1 !important; box-shadow: none !important; }
+        }
+    </style>
+</head>
+<body class="min-h-screen py-8 px-4 sm:px-6 lg:px-8">
+
+    <div class="max-w-6xl mx-auto space-y-6">
+
+        <!-- Header -->
+        <header class="bg-white border border-slate-200 rounded-xl p-6 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print-border">
+            <div>
+                <div class="text-xs font-semibold uppercase tracking-wider text-slate-500">Helwan National University (HNU)</div>
+                <h1 class="text-2xl font-bold text-slate-900 mt-0.5">GPA Calculator & Marks Sheet</h1>
+                <p class="text-xs text-slate-500 mt-1">Level 1 — Fall Semester (20 Credit Hours Total)</p>
+            </div>
+            
+            <div class="flex items-center gap-2 no-print w-full md:w-auto">
+                <button id="resetBtn" class="flex-1 md:flex-none px-4 py-2 text-xs font-semibold rounded-lg border border-slate-300 text-slate-700 bg-white hover:bg-slate-50 transition flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-rotate-right text-slate-400"></i> Reset
+                </button>
+                <button id="printBtn" class="flex-1 md:flex-none px-4 py-2 text-xs font-semibold rounded-lg bg-slate-900 text-white hover:bg-slate-800 transition flex items-center justify-center gap-1.5 shadow-sm">
+                    <i class="fa-solid fa-print"></i> Print / Save PDF
+                </button>
+            </div>
+        </header>
+
+        <!-- Summary Grid -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            
+            <!-- GPA -->
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print-border">
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Semester GPA</span>
+                <div class="mt-2 flex items-baseline gap-1">
+                    <span id="gpaVal" class="text-3xl font-extrabold text-slate-900">0.00</span>
+                    <span class="text-xs font-medium text-slate-400">/ 4.00</span>
+                </div>
+            </div>
+
+            <!-- Standing -->
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print-border">
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Overall Rating</span>
+                <div id="standingVal" class="mt-2 text-xl font-bold text-slate-900">--</div>
+                <div id="standingAr" class="text-xs font-medium text-slate-500 mt-0.5">بإنتظار الإدخال</div>
+            </div>
+
+            <!-- Total Percentage -->
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print-border">
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Weighted Average</span>
+                <div class="mt-2 text-3xl font-extrabold text-slate-900" id="percentageVal">0.0%</div>
+            </div>
+
+            <!-- Total Points -->
+            <div class="bg-white border border-slate-200 rounded-xl p-5 shadow-sm print-border">
+                <span class="text-xs font-semibold text-slate-500 uppercase tracking-wide">Points & Hours</span>
+                <div class="mt-2 flex items-baseline justify-between">
+                    <div>
+                        <span id="pointsVal" class="text-2xl font-bold text-slate-900">0.00</span>
+                        <span class="text-xs text-slate-400 block">Total Points</span>
+                    </div>
+                    <div class="text-right">
+                        <span id="hoursVal" class="text-lg font-bold text-slate-700">0</span><span class="text-xs text-slate-400">/20</span>
+                        <span class="text-xs text-slate-400 block">CR-H</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Main Courses Table Card -->
+        <div class="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden print-border">
+            
+            <div class="p-4 border-b border-slate-200 bg-slate-50/50 flex justify-between items-center">
+                <h2 class="text-sm font-bold text-slate-800">Courses Marks Entry</h2>
+                <span class="text-xs text-slate-500 font-medium">All marks are out of 100</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 text-slate-600 text-[11px] font-bold uppercase tracking-wider border-b border-slate-200">
+                            <th class="py-3 px-3 w-8 text-center">#</th>
+                            <th class="py-3 px-3">Course Code & Name</th>
+                            <th class="py-3 px-3 text-center">CR-H</th>
+                            <th class="py-3 px-3 text-center">Midterm (20)</th>
+                            <th class="py-3 px-3 text-center">Quiz / Att. (20)</th>
+                            <th class="py-3 px-3 text-center">Practical / Oral (20)</th>
+                            <th class="py-3 px-3 text-center">Final Exam</th>
+                            <th class="py-3 px-3 text-center">Total (100)</th>
+                            <th class="py-3 px-3 text-center">Grade</th>
+                            <th class="py-3 px-3 text-center">Points</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coursesBody" class="divide-y divide-slate-200 text-xs text-slate-800">
+                        <!-- Dynamic Rows Injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Footer Note -->
+            <div class="p-3 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-500 flex flex-col sm:flex-row justify-between items-center gap-2">
+                <span>* Practical / Oral exam (20 marks) is applicable only for Anatomy I and Physiology I.</span>
+                <span class="font-semibold text-slate-700">Official HNU Grading System Applied</span>
+            </div>
+        </div>
+
+        <!-- Minimal Grading Scale Reference -->
+        <div class="bg-white border border-slate-200 rounded-xl p-4 shadow-sm print-border">
+            <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">HNU Official Grading Reference Table</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 text-center text-xs">
+                <div class="p-2 bg-slate-50 rounded border border-slate-200"><span class="font-bold block">A+ (4.00)</span><span class="text-[10px] text-slate-500">97 - 100%</span></div>
+                <div class="p-2 bg-slate-50 rounded border border-slate-200"><span class="font-bold block">A (4.00)</span><span class="text-[10px] text-slate-500">93 - 96%</span></div>
+                <div class="p-2 bg-slate-50 rounded border border-slate-200"><span class="font-bold block">A- (3.70)</span><span class="text-[10px] text-slate-500">89 - 92%</span></div>
+                <div class="p-2 bg-slate-50 rounded border border-slate-200"><span class="font-bold block">B+ (3.30)</span><span class="text-[10px] text-slate-500">84 - 88%</span></div>
+                <div class="p-2 bg-slate-50 rounded border border-slate-200"><span class="font-bold block">B (3.00)</span><span class="text-[10px] text-slate-500">80 - 83%</span></div>
+                <div class="p-2 bg-slate-50 rounded border border-slate-200"><span class="font-bold block">B- (2.70)</span><span class="text-[10px] text-slate-500">76 - 79%</span></div>
+                <div class="p-2 bg-slate-50 rounded border border-slate-200"><span class="font-bold block">C+ (2.30)</span><span class="text-[10px] text-slate-500">73 - 75%</span></div>
+                <div class="p-2 bg-slate-50 rounded border border-slate-200"><span class="font-bold block">C (2.00)</span><span class="text-[10px] text-slate-500">70 - 72%</span></div>
+                <div class="p-2 bg-slate-50 rounded border border-slate-200"><span class="font-bold block">C- (1.70)</span><span class="text-[10px] text-slate-500">67 - 69%</span></div>
+                <div class="p-2 bg-slate-50 rounded border border-slate-200"><span class="font-bold block">D+ (1.30)</span><span class="text-[10px] text-slate-500">64 - 66%</span></div>
+                <div class="p-2 bg-slate-50 rounded border border-slate-200"><span class="font-bold block">D (1.00)</span><span class="text-[10px] text-slate-500">60 - 63%</span></div>
+                <div class="p-2 bg-slate-50 rounded border border-slate-200 text-slate-400"><span class="font-bold block">F (0.00)</span><span class="text-[10px]"> &lt; 60%</span></div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Script Logic -->
+    <script>
+        // Data Structure for Courses
+        const courses = [
+            { code: 'BAS0101', name: 'Biology', cr: 1, hasOral: false, finalMax: 60 },
+            { code: 'BAS0102', name: 'Biophysics', cr: 3, hasOral: false, finalMax: 60 },
+            { code: 'BAS0103', name: 'Pathology', cr: 2, hasOral: false, finalMax: 60 },
+            { code: 'BAS0104', name: 'Anatomy I', cr: 3, hasOral: true, finalMax: 40 },
+            { code: 'BAS0105', name: 'Physiology I', cr: 3, hasOral: true, finalMax: 40 },
+            { code: 'BAS0106', name: 'Histology 1', cr: 1, hasOral: false, finalMax: 60 },
+            { code: 'BAS0107', name: 'Biochemistry I', cr: 2, hasOral: false, finalMax: 60 },
+            { code: 'BAS0108', name: 'Communication Skills', cr: 1, hasOral: false, finalMax: 60 },
+            { code: 'UR0101', name: 'Technical English Language', cr: 2, hasOral: false, finalMax: 60 },
+            { code: 'UR0102', name: 'Introduction to Computers', cr: 2, hasOral: false, finalMax: 60 }
+        ];
+
+        // Store user inputs: courseCode -> { mid, quiz, oral, final }
+        let inputsData = {};
+
+        // Convert percentage mark to Letter Grade & Points
+        function getGrade(mark) {
+            if (isNaN(mark) || mark === null || mark === undefined) return { letter: '-', points: 0.0 };
+            const m = Math.round(mark * 100) / 100;
+            if (m >= 97) return { letter: 'A+', points: 4.00 };
+            if (m >= 93) return { letter: 'A', points: 4.00 };
+            if (m >= 89) return { letter: 'A-', points: 3.70 };
+            if (m >= 84) return { letter: 'B+', points: 3.30 };
+            if (m >= 80) return { letter: 'B', points: 3.00 };
+            if (m >= 76) return { letter: 'B-', points: 2.70 };
+            if (m >= 73) return { letter: 'C+', points: 2.30 };
+            if (m >= 70) return { letter: 'C', points: 2.00 };
+            if (m >= 67) return { letter: 'C-', points: 1.70 };
+            if (m >= 64) return { letter: 'D+', points: 1.30 };
+            if (m >= 60) return { letter: 'D', points: 1.00 };
+            return { letter: 'F', points: 0.00 };
+        }
+
+        // Get CGPA Standing
+        function getStanding(gpa) {
+            if (gpa >= 3.70) return { en: 'Excellent', ar: 'امتياز' };
+            if (gpa >= 3.00) return { en: 'Very Good', ar: 'جيد جداً' };
+            if (gpa >= 2.00) return { en: 'Good', ar: 'جيد' };
+            if (gpa >= 1.00) return { en: 'Fair', ar: 'مقبول' };
+            return { en: 'Fail / Unsatisfactory', ar: 'راسب / غير مجتاز' };
+        }
+
+        // Render Table Rows
+        function renderTable() {
+            const tbody = document.getElementById('coursesBody');
+            tbody.innerHTML = '';
+
+            courses.forEach((c, idx) => {
+                const rowData = inputsData[c.code] || { mid: '', quiz: '', oral: '', final: '' };
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition';
+
+                tr.innerHTML = `
+                    <td class="py-2.5 px-3 text-center font-semibold text-slate-400">${idx + 1}</td>
+                    <td class="py-2.5 px-3">
+                        <div class="font-bold text-slate-900">${c.name}</div>
+                        <div class="text-[10px] text-slate-400 font-mono">${c.code}</div>
+                    </td>
+                    <td class="py-2.5 px-3 text-center font-semibold text-slate-700">${c.cr}</td>
+
+                    <!-- Midterm (Max 20) -->
+                    <td class="py-2.5 px-3 text-center">
+                        <input type="number" min="0" max="20" step="0.5" data-code="${c.code}" data-field="mid" value="${rowData.mid}" placeholder="Max 20"
+                            class="mark-input w-16 px-2 py-1 text-center font-medium border border-slate-300 rounded focus:border-slate-800 focus:outline-none bg-white">
+                    </td>
+
+                    <!-- Quiz / Attendance / Assignment (Max 20) -->
+                    <td class="py-2.5 px-3 text-center">
+                        <input type="number" min="0" max="20" step="0.5" data-code="${c.code}" data-field="quiz" value="${rowData.quiz}" placeholder="Max 20"
+                            class="mark-input w-16 px-2 py-1 text-center font-medium border border-slate-300 rounded focus:border-slate-800 focus:outline-none bg-white">
+                    </td>
+
+                    <!-- Practical / Oral (Max 20 if enabled) -->
+                    <td class="py-2.5 px-3 text-center">
+                        ${c.hasOral ? `
+                            <input type="number" min="0" max="20" step="0.5" data-code="${c.code}" data-field="oral" value="${rowData.oral}" placeholder="Max 20"
+                                class="mark-input w-16 px-2 py-1 text-center font-medium border border-slate-300 rounded focus:border-slate-800 focus:outline-none bg-white">
+                        ` : `<span class="text-slate-300 font-bold">-</span>`}
+                    </td>
+
+                    <!-- Final Exam (Max 40 or 60) -->
+                    <td class="py-2.5 px-3 text-center">
+                        <input type="number" min="0" max="${c.finalMax}" step="0.5" data-code="${c.code}" data-field="final" value="${rowData.final}" placeholder="Max ${c.finalMax}"
+                            class="mark-input w-16 px-2 py-1 text-center font-medium border border-slate-300 rounded focus:border-slate-800 focus:outline-none bg-white">
+                    </td>
+
+                    <!-- Total / 100 -->
+                    <td class="py-2.5 px-3 text-center font-extrabold text-slate-900" id="total-${c.code}">-</td>
+
+                    <!-- Grade Letter -->
+                    <td class="py-2.5 px-3 text-center" id="grade-${c.code}">
+                        <span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-500">-</span>
+                    </td>
+
+                    <!-- Points Earned -->
+                    <td class="py-2.5 px-3 text-center font-bold text-slate-800" id="points-${c.code}">-</td>
+                `;
+
+                tbody.appendChild(tr);
+            });
+
+            bindInputs();
+            calculateOverall();
+        }
+
+        // Bind input event listeners
+        function bindInputs() {
+            document.querySelectorAll('.mark-input').forEach(inp => {
+                inp.addEventListener('input', (e) => {
+                    const code = e.target.getAttribute('data-code');
+                    const field = e.target.getAttribute('data-field');
+                    let val = e.target.value;
+
+                    if (!inputsData[code]) {
+                        inputsData[code] = { mid: '', quiz: '', oral: '', final: '' };
+                    }
+                    inputsData[code][field] = val;
+
+                    // Save local copy
+                    localStorage.setItem('hnu_minimal_gpa_data', JSON.stringify(inputsData));
+
+                    updateRow(code);
+                    calculateOverall();
+                });
+            });
+        }
+
+        // Update single row calculation UI
+        function updateRow(code) {
+            const course = courses.find(c => c.code === code);
+            const data = inputsData[code] || {};
+
+            const mid = parseFloat(data.mid) || 0;
+            const quiz = parseFloat(data.quiz) || 0;
+            const oral = course.hasOral ? (parseFloat(data.oral) || 0) : 0;
+            const final = parseFloat(data.final) || 0;
+
+            const hasAnyInput = (data.mid !== '' || data.quiz !== '' || (course.hasOral && data.oral !== '') || data.final !== '');
+
+            const totalTd = document.getElementById(`total-${code}`);
+            const gradeTd = document.getElementById(`grade-${code}`);
+            const pointsTd = document.getElementById(`points-${code}`);
+
+            if (hasAnyInput) {
+                const total = Math.min(100, Math.max(0, mid + quiz + oral + final));
+                const grade = getGrade(total);
+
+                totalTd.textContent = total.toFixed(1);
+                gradeTd.innerHTML = `<span class="inline-block px-2 py-0.5 rounded text-xs font-bold border border-slate-300 bg-slate-100 text-slate-800">${grade.letter}</span>`;
+                pointsTd.textContent = (grade.points * course.cr).toFixed(2);
+            } else {
+                totalTd.textContent = '-';
+                gradeTd.innerHTML = `<span class="inline-block px-2 py-0.5 rounded text-xs font-bold bg-slate-100 text-slate-400">-</span>`;
+                pointsTd.textContent = '-';
+            }
+        }
+
+        // Calculate overall GPA and Summary
+        function calculateOverall() {
+            let totalWeightedPoints = 0;
+            let totalAttemptedHours = 0;
+            let totalWeightedPercentage = 0;
+
+            courses.forEach(c => {
+                const data = inputsData[c.code] || {};
+                const hasAnyInput = (data.mid !== '' || data.quiz !== '' || (c.hasOral && data.oral !== '') || data.final !== '');
+
+                if (hasAnyInput) {
+                    const mid = parseFloat(data.mid) || 0;
+                    const quiz = parseFloat(data.quiz) || 0;
+                    const oral = c.hasOral ? (parseFloat(data.oral) || 0) : 0;
+                    const final = parseFloat(data.final) || 0;
+
+                    const total = Math.min(100, Math.max(0, mid + quiz + oral + final));
+                    const grade = getGrade(total);
+
+                    totalWeightedPoints += (grade.points * c.cr);
+                    totalAttemptedHours += c.cr;
+                    totalWeightedPercentage += (total * c.cr);
+                }
+            });
+
+            const gpaVal = document.getElementById('gpaVal');
+            const standingVal = document.getElementById('standingVal');
+            const standingAr = document.getElementById('standingAr');
+            const percentageVal = document.getElementById('percentageVal');
+            const pointsVal = document.getElementById('pointsVal');
+            const hoursVal = document.getElementById('hoursVal');
+
+            if (totalAttemptedHours > 0) {
+                const gpa = totalWeightedPoints / totalAttemptedHours;
+                const avgPct = totalWeightedPercentage / totalAttemptedHours;
+                const standing = getStanding(gpa);
+
+                gpaVal.textContent = gpa.toFixed(2);
+                standingVal.textContent = standing.en;
+                standingAr.textContent = standing.ar;
+                percentageVal.textContent = `${avgPct.toFixed(1)}%`;
+                pointsVal.textContent = totalWeightedPoints.toFixed(2);
+                hoursVal.textContent = totalAttemptedHours;
+            } else {
+                gpaVal.textContent = '0.00';
+                standingVal.textContent = '--';
+                standingAr.textContent = 'بإنتظار الإدخال';
+                percentageVal.textContent = '0.0%';
+                pointsVal.textContent = '0.00';
+                hoursVal.textContent = '0';
+            }
+        }
+
+        // Initializer
+        document.addEventListener('DOMContentLoaded', () => {
+            const saved = localStorage.getItem('hnu_minimal_gpa_data');
+            if (saved) {
+                try {
+                    inputsData = JSON.parse(saved);
+                } catch (e) {
+                    inputsData = {};
+                }
+            }
+
+            renderTable();
+
+            // Reset Button
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                inputsData = {};
+                localStorage.removeItem('hnu_minimal_gpa_data');
+                renderTable();
+            });
+
+            // Print Button
+            document.getElementById('printBtn').addEventListener('click', () => {
+                window.print();
+            });
+        });
+    </script>
+</body>
+</html>
