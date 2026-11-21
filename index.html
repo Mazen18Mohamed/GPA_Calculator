@@ -28,6 +28,10 @@
         input[type="number"] {
             -moz-appearance: textfield;
         }
+        /* Smooth transition for input highlight */
+        .mark-input {
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
         @media print {
             .no-print { display: none !important; }
             body { background-color: #ffffff !important; }
@@ -56,6 +60,15 @@
                 </button>
             </div>
         </header>
+
+        <!-- Notification Toast Banner for Max Constraint -->
+        <div id="alertBanner" class="hidden no-print bg-slate-900 text-white text-xs px-4 py-2.5 rounded-lg flex items-center justify-between shadow-md transition-all">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-circle-exclamation text-slate-300"></i>
+                <span id="alertMessage">Value exceeded the maximum allowed limit for this field. Automatically set to 0.</span>
+            </div>
+            <button onclick="document.getElementById('alertBanner').classList.add('hidden')" class="text-slate-400 hover:text-white text-sm font-bold ml-4">&times;</button>
+        </div>
 
         <!-- Summary Grid -->
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -161,20 +174,21 @@
     <script>
         // Data Structure for Courses
         const courses = [
-            { code: 'BAS0101', name: 'Biology', cr: 1, hasOral: false, finalMax: 60 },
-            { code: 'BAS0102', name: 'Biophysics', cr: 3, hasOral: false, finalMax: 60 },
-            { code: 'BAS0103', name: 'Pathology', cr: 2, hasOral: false, finalMax: 60 },
-            { code: 'BAS0104', name: 'Anatomy I', cr: 3, hasOral: true, finalMax: 40 },
-            { code: 'BAS0105', name: 'Physiology I', cr: 3, hasOral: true, finalMax: 40 },
-            { code: 'BAS0106', name: 'Histology 1', cr: 1, hasOral: false, finalMax: 60 },
-            { code: 'BAS0107', name: 'Biochemistry I', cr: 2, hasOral: false, finalMax: 60 },
-            { code: 'BAS0108', name: 'Communication Skills', cr: 1, hasOral: false, finalMax: 60 },
-            { code: 'UR0101', name: 'Technical English Language', cr: 2, hasOral: false, finalMax: 60 },
-            { code: 'UR0102', name: 'Introduction to Computers', cr: 2, hasOral: false, finalMax: 60 }
+            { code: 'BAS0101', name: 'Biology', cr: 1, hasOral: false, midMax: 20, quizMax: 20, finalMax: 60 },
+            { code: 'BAS0102', name: 'Biophysics', cr: 3, hasOral: false, midMax: 20, quizMax: 20, finalMax: 60 },
+            { code: 'BAS0103', name: 'Pathology', cr: 2, hasOral: false, midMax: 25, quizMax: 15, finalMax: 60 },
+            { code: 'BAS0104', name: 'Anatomy I', cr: 3, hasOral: true, midMax: 20, quizMax: 20, finalMax: 40 },
+            { code: 'BAS0105', name: 'Physiology I', cr: 3, hasOral: true, midMax: 20, quizMax: 20, finalMax: 40 },
+            { code: 'BAS0106', name: 'Histology 1', cr: 1, hasOral: false, midMax: 20, quizMax: 20, finalMax: 60 },
+            { code: 'BAS0107', name: 'Biochemistry I', cr: 2, hasOral: false, midMax: 20, quizMax: 20, finalMax: 60 },
+            { code: 'BAS0108', name: 'Communication skills', cr: 1, hasOral: false, midMax: 20, quizMax: 20, finalMax: 60 },
+            { code: 'UR0101', name: 'Technical English language', cr: 2, hasOral: false, midMax: 20, quizMax: 20, finalMax: 60 },
+            { code: 'UR0102', name: 'Introduction to computers', cr: 2, hasOral: false, midMax: 20, quizMax: 20, finalMax: 60 }
         ];
 
         // Store user inputs: courseCode -> { mid, quiz, oral, final }
         let inputsData = {};
+        let alertTimeout = null;
 
         // Convert percentage mark to Letter Grade & Points
         function getGrade(mark) {
@@ -203,6 +217,19 @@
             return { en: 'Fail / Unsatisfactory', ar: 'راسب / غير مجتاز' };
         }
 
+        // Trigger subtle alert banner
+        function triggerMaxAlert(fieldLabel, maxVal) {
+            const banner = document.getElementById('alertBanner');
+            const msg = document.getElementById('alertMessage');
+            msg.textContent = `Maximum mark for ${fieldLabel} is ${maxVal}. Value was automatically set to 0.`;
+            banner.classList.remove('hidden');
+
+            if (alertTimeout) clearTimeout(alertTimeout);
+            alertTimeout = setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 3500);
+        }
+
         // Render Table Rows
         function renderTable() {
             const tbody = document.getElementById('coursesBody');
@@ -221,29 +248,29 @@
                     </td>
                     <td class="py-2.5 px-3 text-center font-semibold text-slate-700">${c.cr}</td>
 
-                    <!-- Midterm (Max 20) -->
+                    <!-- Midterm -->
                     <td class="py-2.5 px-3 text-center">
-                        <input type="number" min="0" max="20" step="0.5" data-code="${c.code}" data-field="mid" value="${rowData.mid}" placeholder="Max 20"
+                        <input type="number" min="0" max="${c.midMax || 20}" step="0.5" data-code="${c.code}" data-field="mid" data-label="Midterm" value="${rowData.mid}" placeholder="Max ${c.midMax || 20}"
                             class="mark-input w-16 px-2 py-1 text-center font-medium border border-slate-300 rounded focus:border-slate-800 focus:outline-none bg-white">
                     </td>
 
-                    <!-- Quiz / Attendance / Assignment (Max 20) -->
+                    <!-- Quiz / Attendance / Assignment -->
                     <td class="py-2.5 px-3 text-center">
-                        <input type="number" min="0" max="20" step="0.5" data-code="${c.code}" data-field="quiz" value="${rowData.quiz}" placeholder="Max 20"
+                        <input type="number" min="0" max="${c.quizMax || 20}" step="0.5" data-code="${c.code}" data-field="quiz" data-label="Quiz/Att." value="${rowData.quiz}" placeholder="Max ${c.quizMax || 20}"
                             class="mark-input w-16 px-2 py-1 text-center font-medium border border-slate-300 rounded focus:border-slate-800 focus:outline-none bg-white">
                     </td>
 
                     <!-- Practical / Oral (Max 20 if enabled) -->
                     <td class="py-2.5 px-3 text-center">
                         ${c.hasOral ? `
-                            <input type="number" min="0" max="20" step="0.5" data-code="${c.code}" data-field="oral" value="${rowData.oral}" placeholder="Max 20"
+                            <input type="number" min="0" max="20" step="0.5" data-code="${c.code}" data-field="oral" data-label="Practical/Oral" value="${rowData.oral}" placeholder="Max 20"
                                 class="mark-input w-16 px-2 py-1 text-center font-medium border border-slate-300 rounded focus:border-slate-800 focus:outline-none bg-white">
                         ` : `<span class="text-slate-300 font-bold">-</span>`}
                     </td>
 
                     <!-- Final Exam (Max 40 or 60) -->
                     <td class="py-2.5 px-3 text-center">
-                        <input type="number" min="0" max="${c.finalMax}" step="0.5" data-code="${c.code}" data-field="final" value="${rowData.final}" placeholder="Max ${c.finalMax}"
+                        <input type="number" min="0" max="${c.finalMax}" step="0.5" data-code="${c.code}" data-field="final" data-label="Final Exam" value="${rowData.final}" placeholder="Max ${c.finalMax}"
                             class="mark-input w-16 px-2 py-1 text-center font-medium border border-slate-300 rounded focus:border-slate-800 focus:outline-none bg-white">
                     </td>
 
@@ -266,18 +293,41 @@
             calculateOverall();
         }
 
-        // Bind input event listeners
+        // Bind input event listeners with strict validation
         function bindInputs() {
             document.querySelectorAll('.mark-input').forEach(inp => {
                 inp.addEventListener('input', (e) => {
                     const code = e.target.getAttribute('data-code');
                     const field = e.target.getAttribute('data-field');
-                    let val = e.target.value;
+                    const label = e.target.getAttribute('data-label') || 'Field';
+                    const maxAllowed = parseFloat(e.target.getAttribute('max')) || 100;
+                    let rawVal = e.target.value;
+
+                    if (rawVal !== '') {
+                        let numVal = parseFloat(rawVal);
+                        
+                        // Strict validation logic: Automatically reset to 0 if value exceeds max limit
+                        if (numVal > maxAllowed) {
+                            numVal = 0;
+                            e.target.value = 0;
+                            
+                            // Visual highlight feedback
+                            e.target.classList.add('ring-2', 'ring-slate-900', 'border-slate-900');
+                            setTimeout(() => {
+                                e.target.classList.remove('ring-2', 'ring-slate-900', 'border-slate-900');
+                            }, 500);
+
+                            triggerMaxAlert(label, maxAllowed);
+                        } else if (numVal < 0) {
+                            numVal = 0;
+                            e.target.value = 0;
+                        }
+                    }
 
                     if (!inputsData[code]) {
                         inputsData[code] = { mid: '', quiz: '', oral: '', final: '' };
                     }
-                    inputsData[code][field] = val;
+                    inputsData[code][field] = e.target.value;
 
                     // Save local copy
                     localStorage.setItem('hnu_minimal_gpa_data', JSON.stringify(inputsData));
@@ -388,6 +438,7 @@
             document.getElementById('resetBtn').addEventListener('click', () => {
                 inputsData = {};
                 localStorage.removeItem('hnu_minimal_gpa_data');
+                document.getElementById('alertBanner').classList.add('hidden');
                 renderTable();
             });
 
